@@ -1114,7 +1114,15 @@ function showCategoryProducts(chatId, categoryId, messageId = null) {
 
   const keyboard = [];
   
-  categoryProducts.forEach(product => {
+  // Сортируем: новые товары (с большим id или по алфавиту) первыми
+  const sortedProducts = [...categoryProducts].sort((a, b) => {
+    // Если есть РАЗЪЕБАШКА - она первая!
+    if (a.name.includes('РАЗЪЕБАШКА')) return -1;
+    if (b.name.includes('РАЗЪЕБАШКА')) return 1;
+    return a.name.localeCompare(b.name, 'ru');
+  });
+  
+  sortedProducts.forEach(product => {
     keyboard.push([{ 
       text: `${product.name} - ${formatPrice(product.price)}`.toUpperCase(), 
       callback_data: `view_${product.id}` 
