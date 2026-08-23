@@ -328,8 +328,7 @@ bot.onText(/\/add_flavors/, (msg) => {
     return;
   }
   
-  // Получаем список жидкостей
-  const { products } = require('../data/products');
+  // Получаем список жидкостей из загруженных данных (из Redis)
   const liquids = products.filter(p => p.categoryId === 'liquids');
   
   if (liquids.length === 0) {
