@@ -1222,8 +1222,8 @@ function showProductDetail(chatId, productId, messageId = null, userId = null) {
 
   caption += `\n`;
   
-  // Цены
-  const price = product.cashPrice || product.price;
+  // Цены - используем price, а не cashPrice
+  const price = product.price;
   
   caption += `Цена: ${formatPrice(price)}`;
 
