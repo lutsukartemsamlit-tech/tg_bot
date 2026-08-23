@@ -3305,29 +3305,41 @@ bot.on('callback_query', async (query) => {
     
     // Ищем заказ, чтобы получить chatId клиента
     const orders = getOrders();
-    const clientOrder = orders.find(o => o.userId === clientUserId);
+    // Ищем любой заказ этого пользователя (по любому полю userId)
+    const clientOrder = orders.reverse().find(o => {
+      const orderId = o.userId || (o.chatId && parseInt(o.chatId));
+      return orderId === clientUserId;
+    });
     
     if (!clientOrder) {
-      bot.answerCallbackQuery(query.id, { text: '❌ Не удалось найти клиента', show_alert: true });
+      bot.answerCallbackQuery(query.id, { text: '❌ Не удалось найти клиента. Возможно заказ еще не сохранен.', show_alert: true });
+      return;
+    }
+    
+    // Получаем chatId клиента
+    const clientChatId = clientOrder.chatId || clientOrder.userId;
+    if (!clientChatId) {
+      bot.answerCallbackQuery(query.id, { text: '❌ Не удалось определить chat ID клиента', show_alert: true });
       return;
     }
     
     // Открываем чат с клиентом
     const clientFirstName = clientOrder.firstName || 'Клиент';
-    const clientUsername = clientOrder.username !== 'Не указан' ? clientOrder.username : '';
+    const clientUsername = clientOrder.username !== 'Не указан' && clientOrder.username ? clientOrder.username : '';
     
-    chat.openChat(clientUserId, clientOrder.chatId, clientUsername, clientFirstName);
+    chat.openChat(clientUserId, clientChatId, clientUsername, clientFirstName);
     // Убираем клавиатуру у пользователя пока чат активен
-    bot.sendMessage(clientOrder.chatId,
+    bot.sendMessage(clientChatId,
       '💬 Менеджер начал с вами чат. Напишите сообщение.',
       { reply_markup: { keyboard: [['❌ Закрыть чат с поддержкой']], resize_keyboard: true } }
-    );
+    ).catch(err => console.error('Ошибка отправки уведомления клиенту:', err.message));
+    
     chat.setAdminReplyMode(userId, clientUserId);
     
     bot.answerCallbackQuery(query.id, { text: '💬 Введите сообщение клиенту' });
     bot.sendMessage(chatId, 
       `💬 *Режим ответа клиенту активирован*\n\n` +
-      `Клиент: ${clientFirstName}${clientUsername ? ` (@${clientUsername})` : ''}\n` +
+      `Клиент: ${clientFirstName}${clientUsername ? ` (${clientUsername})` : ''}\n` +
       `ID: \`${clientUserId}\`\n\n` +
       `Введите ваше сообщение, и оно будет отправлено клиенту.\n\n` +
       `Для отмены используйте /cancel`,

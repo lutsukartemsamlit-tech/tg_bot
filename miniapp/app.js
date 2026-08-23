@@ -789,15 +789,23 @@ function submitOrder() {
   const tgUsernameVal = tgUser && tgUser.username ? '@' + tgUser.username : _orderTgUsername;
   const tgInitData = tg && tg.initData ? tg.initData : null;
 
+  // Проверяем что userId есть
+  if (!tgUserId) {
+    showToast('❌ Ошибка: не удалось определить пользователя. Откройте Mini App из Telegram бота.', '#e74c3c');
+    if (btn) { btn.disabled = false; btn.textContent = 'Отправить заказ менеджеру'; }
+    return;
+  }
+
   const orderId = genId();
   const orderData = {
     orderId,
-    username: username || tgUsernameVal || tgFirstName || null,
+    username: username || tgUsernameVal || tgFirstName || 'Не указан',
     userId: tgUserId,
-    firstName: tgFirstName,
+    firstName: tgFirstName || 'Клиент',
     tgInitData,
     pickupPoint: selectedPickupPoint ? selectedPickupPoint.address : 'Метро Победы',
     items: cart.map(i => ({
+      id: i.productId,
       productId: i.productId,
       name: i.name,
       flavor: i.flavor,
@@ -811,6 +819,8 @@ function submitOrder() {
   const btn = document.querySelector('.submit-btn');
   if (btn) { btn.disabled = true; btn.textContent = 'Отправляем...'; }
 
+  console.log('📤 Отправка заказа:', orderData);
+
   // Всегда отправляем через API — tg.sendData не работает при открытии через web_app URL
   fetch(`${API_BASE}/api/order`, {
     method: 'POST',
@@ -818,11 +828,16 @@ function submitOrder() {
     body: JSON.stringify(orderData)
   })
     .then(r => r.json())
-    .then(() => { cart = []; updateCartBadge(); showSuccess(orderId); })
+    .then((result) => { 
+      console.log('✅ Заказ отправлен:', result);
+      cart = []; 
+      updateCartBadge(); 
+      showSuccess(orderId); 
+    })
     .catch(err => {
-      console.error('Order error:', err);
+      console.error('❌ Order error:', err);
       if (btn) { btn.disabled = false; btn.textContent = 'Отправить заказ менеджеру'; }
-      showToast('Ошибка отправки', '#e74c3c');
+      showToast('Ошибка отправки. Попробуйте еще раз.', '#e74c3c');
     });
 }
 
