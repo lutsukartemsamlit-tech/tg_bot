@@ -3138,7 +3138,8 @@ bot.on('callback_query', async (query) => {
 
     const orderId = data.replace('complete_', '');
     const orders = getOrders();
-    const order = orders.find(o => o.id === orderId);
+    // Поддержка обоих форматов: order.id (бот) и order.orderId (mini app)
+    const order = orders.find(o => (o.id || o.orderId) === orderId);
 
     if (!order) {
       bot.answerCallbackQuery(query.id, { text: '❌ Заказ не найден', show_alert: true });
@@ -3209,6 +3210,39 @@ bot.on('callback_query', async (query) => {
       }
     ).catch(() => {});
 
+    // Отправляем запрос отзыва клиенту после завершения заказа
+    const clientChatId = order.chatId || order.userId;
+    const clientUserId = order.userId;
+    if (clientChatId && clientUserId && !hasRecentReview(clientUserId)) {
+      setTimeout(() => {
+        bot.sendMessage(
+          clientChatId,
+          `🎉 Ваш заказ #${orderId} завершён!\n\nБудем рады, если вы оставите отзыв о вашем заказе — это займёт меньше минуты и очень поможет нам стать лучше 🙏`,
+          {
+            reply_markup: {
+              inline_keyboard: [
+                [
+                  { text: '⭐',     callback_data: 'review_rate_1' },
+                  { text: '⭐⭐',   callback_data: 'review_rate_2' },
+                  { text: '⭐⭐⭐', callback_data: 'review_rate_3' },
+                ],
+                [
+                  { text: '⭐⭐⭐⭐',   callback_data: 'review_rate_4' },
+                  { text: '⭐⭐⭐⭐⭐', callback_data: 'review_rate_5' },
+                ],
+                [
+                  { text: '✖️ Не сейчас', callback_data: 'review_cancel' }
+                ]
+              ]
+            }
+          }
+        ).then(() => {
+          // Инициализируем состояние отзыва для этого пользователя
+          reviewState[clientUserId] = { step: 'rating', orderId };
+        }).catch(err => console.error('Ошибка запроса отзыва:', err.message));
+      }, 3000); // задержка чтобы сообщение пришло после уведомления
+    }
+
   } else if (data.startsWith('confirm_') || data.startsWith('cancel_')) {
     if (!isAdmin(userId)) {
       bot.answerCallbackQuery(query.id, { text: '❌ Доступ запрещен' });
@@ -3218,72 +3252,48 @@ bot.on('callback_query', async (query) => {
     const orderId = data.split('_')[1];
     const action = data.startsWith('confirm_') ? 'confirmed' : 'cancelled';
     const orders = getOrders();
-    const order = orders.find(o => o.id === orderId);
+    // Поддержка обоих форматов: order.id (бот) и order.orderId (mini app)
+    const order = orders.find(o => (o.id || o.orderId) === orderId);
 
-    if (order) {
-      order.status = action;
-      saveOrder(order);
+    if (!order) {
+      bot.answerCallbackQuery(query.id, { text: '❌ Заказ не найден', show_alert: true });
+      return;
+    }
 
-      const statusText = action === 'confirmed' ? '✅ подтвержден' : '❌ отменен';
-      bot.answerCallbackQuery(query.id, { text: `Заказ ${statusText}` });
+    order.status = action;
+    saveOrder(order);
 
-      // При подтверждении оставляем кнопку "Завершить", при отмене — убираем все кнопки
-      const editOptions = {
-        chat_id: chatId,
-        message_id: query.message.message_id,
-        parse_mode: 'Markdown'
+    const statusText = action === 'confirmed' ? '✅ подтвержден' : '❌ отменен';
+    bot.answerCallbackQuery(query.id, { text: `Заказ ${statusText}` });
+
+    // При подтверждении оставляем кнопку "Завершить", при отмене — убираем все кнопки
+    const editOptions = {
+      chat_id: chatId,
+      message_id: query.message.message_id,
+      parse_mode: 'Markdown'
+    };
+
+    if (action === 'confirmed') {
+      editOptions.reply_markup = {
+        inline_keyboard: [
+          [{ text: '🏁 Завершить заказ', callback_data: `complete_${orderId}` }],
+          [{ text: '💬 Написать клиенту', callback_data: `contact_${order.userId}` }]
+        ]
       };
+    }
 
-      if (action === 'confirmed') {
-        editOptions.reply_markup = {
-          inline_keyboard: [
-            [{ text: '🏁 Завершить заказ', callback_data: `complete_${orderId}` }],
-            [{ text: '💬 Написать клиенту', callback_data: `contact_${order.userId}` }]
-          ]
-        };
-      }
+    bot.editMessageText(
+      `${query.message.text}\n\n*Статус: ${statusText.toUpperCase()}*`,
+      editOptions
+    ).catch(() => {});
 
-      bot.editMessageText(
-        `${query.message.text}\n\n*Статус: ${statusText.toUpperCase()}*`,
-        editOptions
-      ).catch(() => {});
-
-      // Уведомить клиента
+    // Уведомить клиента - используем chatId или userId
+    const clientChatId = order.chatId || order.userId;
+    if (clientChatId) {
       bot.sendMessage(
-        order.chatId,
+        clientChatId,
         `Ваш заказ #${orderId} ${statusText}!`
-      );
-
-      // Автозапрос отзыва — только при подтверждении, и только если не оставлял в последние 30 дней
-      if (action === 'confirmed' && !hasRecentReview(order.userId)) {
-        setTimeout(() => {
-          bot.sendMessage(
-            order.chatId,
-            `🎉 Рады, что вы выбрали нас!\n\nПожалуйста, оставьте отзыв о вашем заказе — это займёт меньше минуты и очень поможет нам стать лучше 🙏`,
-            {
-              reply_markup: {
-                inline_keyboard: [
-                  [
-                    { text: '⭐',     callback_data: 'review_rate_1' },
-                    { text: '⭐⭐',   callback_data: 'review_rate_2' },
-                    { text: '⭐⭐⭐', callback_data: 'review_rate_3' },
-                  ],
-                  [
-                    { text: '⭐⭐⭐⭐',   callback_data: 'review_rate_4' },
-                    { text: '⭐⭐⭐⭐⭐', callback_data: 'review_rate_5' },
-                  ],
-                  [
-                    { text: '✖️ Не сейчас', callback_data: 'review_cancel' }
-                  ]
-                ]
-              }
-            }
-          ).then(() => {
-            // Инициализируем состояние отзыва для этого пользователя
-            reviewState[order.userId] = { step: 'rating', orderId };
-          }).catch(() => {});
-        }, 5000); // небольшая задержка чтобы сообщение пришло после уведомления о статусе
-      }
+      ).catch(err => console.error('Ошибка уведомления клиента:', err.message));
     }
   } else if (data.startsWith('contact_')) {
     if (!isAdmin(userId)) {
