@@ -827,6 +827,55 @@ const products = [
     ]
   },
   {
+    "id": "razbashka_80",
+    "categoryId": "liquids",
+    "name": "РАЗЪЕБАШКА 80МГ",
+    "description": "Ультракрепкая солевая жидкость\nНикотин: 80мг\nОбъём: 30мл",
+    "price": 500,
+    "cashPrice": 500,
+    "stock": 50,
+    "icon": "💧",
+    "location": "Все точки",
+    "image": "AgACAgIAAxkBAAISAAFqit7epKo8tFVr1xRF_yxKK6rsugACBx5rG2lKWEg-Y8UJxWUkHQEAAwIAA3kAAz0E",
+    "flavors": [
+      {
+        "name": "Чернично смородиновый морс",
+        "stock": "",
+        "enabled": true
+      },
+      {
+        "name": "Яблочный лимонад",
+        "stock": "",
+        "enabled": true
+      },
+      {
+        "name": "Вишневый сироп",
+        "stock": "",
+        "enabled": true
+      },
+      {
+        "name": "Арбузно вишневый морс",
+        "stock": "",
+        "enabled": true
+      },
+      {
+        "name": "Виноградный энергетик",
+        "stock": "",
+        "enabled": true
+      },
+      {
+        "name": "Виноградный демон",
+        "stock": "",
+        "enabled": true
+      },
+      {
+        "name": "Земляника вишня",
+        "stock": "",
+        "enabled": true
+      }
+    ]
+  },
+  {
     "id": "zloy_v2",
     "categoryId": "liquids",
     "name": "Bjorn Zloy v2 60мг",
