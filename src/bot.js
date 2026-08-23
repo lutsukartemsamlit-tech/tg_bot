@@ -148,6 +148,15 @@ bot.on('polling_error', (error) => {
 // Загружаем товары из Redis при старте
 loadProductsFromRedis().then(() => {
   console.log('✅ Бот запущен, товары загружены');
+  
+  // Отладка: проверяем РАЗЪЕБАШКУ после загрузки
+  const raz = products.find(p => p.name && p.name.includes('РАЗЪЕБАШКА'));
+  if (raz) {
+    console.log('🔍 ОТЛАДКА КАТАЛОГА:');
+    const liquids = products.filter(p => p.categoryId === 'liquids' && !p.parentId);
+    console.log('   Всего жидкостей в каталоге:', liquids.length);
+    console.log('   РАЗЪЕБАШКА в списке:', liquids.some(l => l.id === raz.id) ? '✅ ДА' : '❌ НЕТ');
+  }
 }).catch(err => {
   console.error('❌ Ошибка загрузки товаров:', err);
 });
