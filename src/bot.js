@@ -333,6 +333,42 @@ bot.onText(/\/add_liquid/, (msg) => {
   );
 });
 
+// Временная отладочная команда для проверки РАЗЪЕБАШКИ
+bot.onText(/\/check_raz/, (msg) => {
+  const chatId = msg.chat.id;
+  const userId = msg.from.id;
+  
+  if (!isAdmin(userId)) {
+    return bot.sendMessage(chatId, '❌ Команда только для админов');
+  }
+  
+  const raz = products.find(p => p.name && p.name.includes('РАЗЪЕБАШКА'));
+  
+  if (raz) {
+    const liquids = products.filter(p => p.categoryId === 'liquids' && !p.parentId);
+    const razInList = liquids.find(l => l.id === raz.id);
+    
+    let text = '🔍 ОТЛАДКА РАЗЪЕБАШКИ:\n\n';
+    text += `✅ Найдена в products: ДА\n`;
+    text += `ID: ${raz.id}\n`;
+    text += `Название: ${raz.name}\n`;
+    text += `Цена: ${raz.price}₽\n`;
+    text += `categoryId: ${raz.categoryId}\n`;
+    text += `parentId: ${raz.parentId || 'НЕТ'}\n`;
+    text += `enabled: ${raz.enabled !== undefined ? raz.enabled : 'НЕ ЗАДАНО (true)'}\n\n`;
+    text += `Фильтр showCategoryProducts:\n`;
+    text += `  categoryId === 'liquids': ${raz.categoryId === 'liquids'}\n`;
+    text += `  !parentId: ${!raz.parentId}\n`;
+    text += `  В списке liquids: ${razInList ? 'ДА' : 'НЕТ'}\n\n`;
+    text += `Всего жидкостей: ${liquids.length}\n`;
+    text += `Всего products: ${products.length}`;
+    
+    bot.sendMessage(chatId, text);
+  } else {
+    bot.sendMessage(chatId, '❌ РАЗЪЕБАШКА не найдена в products!\n\nВсего товаров: ' + products.length);
+  }
+});
+
 // Команда для админов - добавить вкусы к существующей жидкости
 bot.onText(/\/add_flavors/, (msg) => {
   const chatId = msg.chat.id;
