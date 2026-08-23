@@ -32,6 +32,12 @@ async function loadProductsFromRedis() {
         if (Array.isArray(parsedData)) {
           products = parsedData;
           console.log('✅ Товары загружены из Redis:', products.length);
+          const raz = products.find(p => p.name && p.name.includes('РАЗЪЕБАШКА'));
+          if (raz) {
+            console.log('   ✅ РАЗЪЕБАШКА найдена в Redis! ID:', raz.id, 'Цена:', raz.price);
+          } else {
+            console.log('   ❌ РАЗЪЕБАШКА НЕ НАЙДЕНА в Redis!');
+          }
         } else {
           console.log('⚠️ Неверный формат данных в Redis, загружаем из файла');
           const fileData = require('../data/products');
