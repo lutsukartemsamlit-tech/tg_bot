@@ -6,6 +6,7 @@ const ORDERS_FILE = path.join(__dirname, '../data/orders.json');
 // Redis client
 let redis = null;
 let redisInitialized = false;
+let ordersCache = null; // Кэш заказов из Redis
 
 function getRedisClient() {
   if (!redisInitialized) {
@@ -16,6 +17,7 @@ function getRedisClient() {
           url: process.env.UPSTASH_REDIS_REST_URL,
           token: process.env.UPSTASH_REDIS_REST_TOKEN,
         });
+        console.log('✅ Redis client initialized for orders');
       } catch (e) {
         console.error('Redis init error:', e.message);
       }
@@ -30,8 +32,34 @@ function ensureDataDir() {
   if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
 }
 
-// Синхронная версия - читает из файла (для обратной совместимости)
-function getOrders() {
+// Инициализация при старте - загружаем заказы из Redis в кэш
+async function initOrdersCache() {
+  try {
+    const redisClient = getRedisClient();
+    if (redisClient) {
+      let orders = await redisClient.get('orders');
+      if (orders) {
+        if (typeof orders === 'string') {
+          orders = JSON.parse(orders);
+        }
+        if (Array.isArray(orders)) {
+          ordersCache = orders;
+          console.log(`✅ Orders cache loaded from Redis: ${orders.length} orders`);
+          return;
+        }
+      }
+    }
+  } catch (e) {
+    console.error('❌ Error loading orders cache from Redis:', e.message);
+  }
+  
+  // Fallback: загружаем из файла
+  ordersCache = getOrdersFromFile();
+  console.log(`📄 Orders cache loaded from file: ${ordersCache.length} orders`);
+}
+
+// Чтение из файла
+function getOrdersFromFile() {
   ensureDataDir();
   try {
     if (fs.existsSync(ORDERS_FILE)) {
@@ -39,9 +67,18 @@ function getOrders() {
       return JSON.parse(data);
     }
   } catch (e) {
-    console.error('Ошибка чтения заказов:', e);
+    console.error('Ошибка чтения заказов из файла:', e);
   }
   return [];
+}
+
+// Синхронная версия - возвращает из кэша
+function getOrders() {
+  if (ordersCache) {
+    return ordersCache;
+  }
+  // Если кэш не загружен - читаем из файла
+  return getOrdersFromFile();
 }
 
 // Async версия - читает из Redis, fallback к файлу
@@ -79,31 +116,45 @@ async function getOrdersAsync() {
   return getOrders();
 }
 
-// Синхронная версия - сохраняет в файл (для обратной совместимости)
+// Синхронная версия - сохраняет в файл И обновляет кэш
 function saveOrder(order) {
+  const uid = order.id || order.orderId;
+  
+  // Обновляем кэш
+  if (ordersCache) {
+    const idx = ordersCache.findIndex(o => (o.id || o.orderId) === uid);
+    if (idx >= 0) ordersCache[idx] = order;
+    else ordersCache.push(order);
+  }
+  
+  // Сохраняем в файл
   ensureDataDir();
   try {
-    const orders = getOrders();
-    // Поддержка обоих форматов: order.id (бот) и order.orderId (mini app)
-    const uid = order.id || order.orderId;
+    const orders = getOrdersFromFile();
     const idx = orders.findIndex(o => (o.id || o.orderId) === uid);
     if (idx >= 0) orders[idx] = order;
     else orders.push(order);
     fs.writeFileSync(ORDERS_FILE, JSON.stringify(orders, null, 2));
-    
-    // Async сохранение в Redis (без ожидания)
-    saveOrderAsync(order).catch(e => console.error('Redis save error:', e.message));
-    
-    return true;
   } catch (e) {
-    console.error('Ошибка сохранения заказа:', e);
-    return false;
+    console.error('Ошибка сохранения заказа в файл:', e);
   }
+  
+  // Async сохранение в Redis (без ожидания)
+  saveOrderAsync(order).catch(e => console.error('Redis save error:', e.message));
+  
+  return true;
 }
 
-// Async версия - сохраняет в Redis И файл
+// Async версия - сохраняет в Redis И обновляет кэш
 async function saveOrderAsync(order) {
   const uid = order.id || order.orderId;
+  
+  // Обновляем кэш
+  if (ordersCache) {
+    const idx = ordersCache.findIndex(o => (o.id || o.orderId) === uid);
+    if (idx >= 0) ordersCache[idx] = order;
+    else ordersCache.push(order);
+  }
   
   // Сохраняем в Redis
   try {
@@ -116,6 +167,9 @@ async function saveOrderAsync(order) {
       
       await redisClient.set('orders', JSON.stringify(orders));
       console.log('✅ Order saved to Redis:', uid);
+      
+      // Обновляем кэш с актуальными данными из Redis
+      ordersCache = orders;
     }
   } catch (e) {
     console.error('Ошибка сохранения заказа в Redis:', e.message);
@@ -124,7 +178,7 @@ async function saveOrderAsync(order) {
   // Сохраняем в файл
   ensureDataDir();
   try {
-    const orders = getOrders();
+    const orders = getOrdersFromFile();
     const idx = orders.findIndex(o => (o.id || o.orderId) === uid);
     if (idx >= 0) orders[idx] = order;
     else orders.push(order);
@@ -134,7 +188,25 @@ async function saveOrderAsync(order) {
   }
 }
 
+module.exports = { getOrders, saveOrder, clearOrders, getOrdersAsync, saveOrderAsync, initOrdersCache };
+
+
 function clearOrders() {
+  ordersCache = [];
+  
+  // Очищаем Redis
+  try {
+    const redisClient = getRedisClient();
+    if (redisClient) {
+      redisClient.set('orders', JSON.stringify([])).then(() => {
+        console.log('✅ Orders cleared in Redis');
+      }).catch(e => console.error('Redis clear error:', e.message));
+    }
+  } catch (e) {
+    console.error('Ошибка очистки заказов в Redis:', e.message);
+  }
+  
+  // Очищаем файл
   ensureDataDir();
   try {
     fs.writeFileSync(ORDERS_FILE, JSON.stringify([], null, 2));
@@ -144,5 +216,3 @@ function clearOrders() {
     return false;
   }
 }
-
-module.exports = { getOrders, saveOrder, clearOrders, getOrdersAsync, saveOrderAsync };

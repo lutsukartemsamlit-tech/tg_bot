@@ -3,7 +3,7 @@
 const dns = require('dns');
 dns.setDefaultResultOrder('ipv4first');
 const TelegramBot = require('node-telegram-bot-api');
-const { saveOrder, getOrders, clearOrders } = require('../utils/storage');
+const { saveOrder, getOrders, clearOrders, initOrdersCache } = require('../utils/storage');
 const { formatPrice, generateOrderId } = require('../utils/helpers');
 const { getReviews, saveReview, deleteReview, getStats, hasRecentReview } = require('../utils/reviews');
 const { addProduct } = require('../utils/productManager');
@@ -146,8 +146,11 @@ bot.on('polling_error', (error) => {
 });
 
 // Загружаем товары из Redis при старте
-loadProductsFromRedis().then(() => {
+loadProductsFromRedis().then(async () => {
   console.log('✅ Бот запущен, товары загружены');
+  
+  // Загружаем заказы из Redis в кэш
+  await initOrdersCache();
   
   // Отладка: проверяем РАЗЪЕБАШКУ после загрузки
   const raz = products.find(p => p.name && p.name.includes('РАЗЪЕБАШКА'));
