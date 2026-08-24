@@ -11,7 +11,8 @@
     "dev": "nodemon src/bot.js",
     "server": "node server.js",
     "server:dev": "nodemon server.js",
-    "tunnel": "node start_tunnel.js"
+    "tunnel": "node start_tunnel.js",
+    "backup": "node backup.js"
   },
   "keywords": [
     "telegram",
