@@ -372,6 +372,36 @@ bot.onText(/\/check_raz/, (msg) => {
   }
 });
 
+// Отладочная команда для проверки заказов
+bot.onText(/\/check_orders/, (msg) => {
+  const chatId = msg.chat.id;
+  const userId = msg.from.id;
+  
+  if (!isAdmin(userId)) {
+    return bot.sendMessage(chatId, '❌ Команда только для админов');
+  }
+  
+  const orders = getOrders();
+  
+  let text = '📦 ОТЛАДКА ЗАКАЗОВ:\n\n';
+  text += `Всего заказов: ${orders.length}\n\n`;
+  
+  if (orders.length > 0) {
+    text += 'Последние 5 заказов:\n';
+    orders.slice(-5).forEach((o, i) => {
+      const oid = o.id || o.orderId;
+      text += `${i+1}. ${oid}\n`;
+      text += `   Source: ${o.source || 'bot'}\n`;
+      text += `   Status: ${o.status}\n`;
+      text += `   UserId: ${o.userId}\n\n`;
+    });
+  } else {
+    text += '❌ Нет заказов в кэше';
+  }
+  
+  bot.sendMessage(chatId, text);
+});
+
 // Команда для админов - добавить вкусы к существующей жидкости
 bot.onText(/\/add_flavors/, (msg) => {
   const chatId = msg.chat.id;
