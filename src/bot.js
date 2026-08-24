@@ -3,7 +3,7 @@
 const dns = require('dns');
 dns.setDefaultResultOrder('ipv4first');
 const TelegramBot = require('node-telegram-bot-api');
-const { saveOrder, getOrders, clearOrders, initOrdersCache } = require('../utils/storage');
+const { saveOrder, getOrders, clearOrders, initOrdersCache, refreshOrdersCache } = require('../utils/storage');
 const { formatPrice, generateOrderId } = require('../utils/helpers');
 const { getReviews, saveReview, deleteReview, getStats, hasRecentReview } = require('../utils/reviews');
 const { addProduct } = require('../utils/productManager');
@@ -3228,6 +3228,10 @@ bot.on('callback_query', async (query) => {
     }
 
     const orderId = data.replace('complete_', '');
+    
+    // Обновляем кэш из Redis перед поиском заказа
+    await refreshOrdersCache();
+    
     const orders = getOrders();
     // Поддержка обоих форматов: order.id (бот) и order.orderId (mini app)
     const order = orders.find(o => (o.id || o.orderId) === orderId);
@@ -3344,6 +3348,9 @@ bot.on('callback_query', async (query) => {
     const action = data.startsWith('confirm_') ? 'confirmed' : 'cancelled';
     
     console.log(`🔍 Обработка ${action} для заказа ${orderId}`);
+    
+    // Обновляем кэш из Redis перед поиском заказа
+    await refreshOrdersCache();
     
     const orders = getOrders();
     console.log(`📦 Всего заказов в кэше: ${orders.length}`);

@@ -58,6 +58,29 @@ async function initOrdersCache() {
   console.log(`📄 Orders cache loaded from file: ${ordersCache.length} orders`);
 }
 
+// Обновление кэша из Redis (вызывается перед поиском заказа)
+async function refreshOrdersCache() {
+  try {
+    const redisClient = getRedisClient();
+    if (redisClient) {
+      let orders = await redisClient.get('orders');
+      if (orders) {
+        if (typeof orders === 'string') {
+          orders = JSON.parse(orders);
+        }
+        if (Array.isArray(orders)) {
+          ordersCache = orders;
+          console.log(`🔄 Orders cache refreshed from Redis: ${orders.length} orders`);
+          return true;
+        }
+      }
+    }
+  } catch (e) {
+    console.error('❌ Error refreshing orders cache:', e.message);
+  }
+  return false;
+}
+
 // Чтение из файла
 function getOrdersFromFile() {
   ensureDataDir();
@@ -188,7 +211,7 @@ async function saveOrderAsync(order) {
   }
 }
 
-module.exports = { getOrders, saveOrder, clearOrders, getOrdersAsync, saveOrderAsync, initOrdersCache };
+module.exports = { getOrders, saveOrder, clearOrders, getOrdersAsync, saveOrderAsync, initOrdersCache, refreshOrdersCache };
 
 
 function clearOrders() {
