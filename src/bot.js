@@ -3342,15 +3342,27 @@ bot.on('callback_query', async (query) => {
 
     const orderId = data.split('_')[1];
     const action = data.startsWith('confirm_') ? 'confirmed' : 'cancelled';
+    
+    console.log(`🔍 Обработка ${action} для заказа ${orderId}`);
+    
     const orders = getOrders();
+    console.log(`📦 Всего заказов в кэше: ${orders.length}`);
+    
     // Поддержка обоих форматов: order.id (бот) и order.orderId (mini app)
-    const order = orders.find(o => (o.id || o.orderId) === orderId);
+    const order = orders.find(o => {
+      const oid = o.id || o.orderId;
+      console.log(`   Проверяем заказ: ${oid} (id: ${o.id}, orderId: ${o.orderId})`);
+      return oid === orderId;
+    });
 
     if (!order) {
+      console.log(`❌ Заказ ${orderId} не найден среди ${orders.length} заказов`);
+      console.log('   Все IDs:', orders.map(o => o.id || o.orderId).join(', '));
       bot.answerCallbackQuery(query.id, { text: '❌ Заказ не найден', show_alert: true });
       return;
     }
 
+    console.log(`✅ Заказ ${orderId} найден, обновляем статус на ${action}`);
     order.status = action;
     saveOrder(order);
 
