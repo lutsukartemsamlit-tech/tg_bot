@@ -32,19 +32,20 @@ export default async function handler(req, res) {
 
     console.log('📦 Order received:', JSON.stringify({ orderId, username, userId, firstName, itemsCount: items?.length, total }));
 
-    // ВАЖНО: Сохраняем заказ в orders.json для обработки через бота
+    // ВАЖНО: Сохраняем заказ в Redis (Vercel serverless = readonly filesystem)
     try {
-      const fs = require('fs');
-      const path = require('path');
-      const ordersPath = path.join(process.cwd(), 'data', 'orders.json');
+      const { Redis } = await import('@upstash/redis');
       
-      // Читаем текущие заказы
-      let orders = [];
-      if (fs.existsSync(ordersPath)) {
-        orders = JSON.parse(fs.readFileSync(ordersPath, 'utf8'));
+      if (!process.env.UPSTASH_REDIS_REST_URL || !process.env.UPSTASH_REDIS_REST_TOKEN) {
+        throw new Error('Redis not configured');
       }
       
-      // Добавляем новый заказ
+      const redis = new Redis({
+        url: process.env.UPSTASH_REDIS_REST_URL,
+        token: process.env.UPSTASH_REDIS_REST_TOKEN,
+      });
+      
+      // Создаем объект заказа
       const order = {
         orderId: orderId,
         id: orderId, // Для совместимости с ботом
@@ -59,15 +60,22 @@ export default async function handler(req, res) {
         date: new Date().toISOString()
       };
       
+      // Читаем текущие заказы из Redis
+      let orders = await redis.get('orders') || [];
+      if (typeof orders === 'string') {
+        orders = JSON.parse(orders);
+      }
+      if (!Array.isArray(orders)) {
+        orders = [];
+      }
+      
+      // Добавляем новый заказ
       orders.push(order);
       
-      // Сохраняем
-      if (!fs.existsSync(path.dirname(ordersPath))) {
-        fs.mkdirSync(path.dirname(ordersPath), { recursive: true });
-      }
-      fs.writeFileSync(ordersPath, JSON.stringify(orders, null, 2));
+      // Сохраняем обратно в Redis
+      await redis.set('orders', JSON.stringify(orders));
       
-      console.log('✅ Order saved to orders.json');
+      console.log('✅ Order saved to Redis');
     } catch (saveError) {
       console.error('❌ Failed to save order:', saveError.message);
       // Продолжаем выполнение даже если не удалось сохранить
