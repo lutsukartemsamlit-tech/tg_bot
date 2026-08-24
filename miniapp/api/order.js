@@ -32,6 +32,47 @@ export default async function handler(req, res) {
 
     console.log('📦 Order received:', JSON.stringify({ orderId, username, userId, firstName, itemsCount: items?.length, total }));
 
+    // ВАЖНО: Сохраняем заказ в orders.json для обработки через бота
+    try {
+      const fs = require('fs');
+      const path = require('path');
+      const ordersPath = path.join(process.cwd(), 'data', 'orders.json');
+      
+      // Читаем текущие заказы
+      let orders = [];
+      if (fs.existsSync(ordersPath)) {
+        orders = JSON.parse(fs.readFileSync(ordersPath, 'utf8'));
+      }
+      
+      // Добавляем новый заказ
+      const order = {
+        orderId: orderId,
+        id: orderId, // Для совместимости с ботом
+        userId: userId,
+        username: username,
+        firstName: firstName,
+        items: items,
+        total: total,
+        pickupPoint: pickupPoint,
+        source: 'miniapp_api',
+        status: 'pending',
+        date: new Date().toISOString()
+      };
+      
+      orders.push(order);
+      
+      // Сохраняем
+      if (!fs.existsSync(path.dirname(ordersPath))) {
+        fs.mkdirSync(path.dirname(ordersPath), { recursive: true });
+      }
+      fs.writeFileSync(ordersPath, JSON.stringify(orders, null, 2));
+      
+      console.log('✅ Order saved to orders.json');
+    } catch (saveError) {
+      console.error('❌ Failed to save order:', saveError.message);
+      // Продолжаем выполнение даже если не удалось сохранить
+    }
+
     // Если есть userId но нет имени/username — пробуем достать через Bot API
     if (userId && (!username || !firstName)) {
       try {
