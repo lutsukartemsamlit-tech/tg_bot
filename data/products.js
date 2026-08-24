@@ -156,7 +156,7 @@ const products = [
       },
       {
         "name": "Retro Pink",
-        "enabled": false
+        "enabled": true
       },
       {
         "name": "Cool Black",
@@ -164,7 +164,7 @@ const products = [
       },
       {
         "name": "Cool Pink",
-        "enabled": false
+        "enabled": true
       }
     ]
   },
@@ -210,7 +210,7 @@ const products = [
       },
       {
         "name": "Aurora Blue",
-        "enabled": false
+        "enabled": true
       },
       {
         "name": "Silk Green",
@@ -248,7 +248,7 @@ const products = [
       },
       {
         "name": "Titanium Black",
-        "enabled": false
+        "enabled": true
       },
       {
         "name": "Titanium Silver",
@@ -256,15 +256,15 @@ const products = [
       },
       {
         "name": "Plume White",
-        "enabled": false
+        "enabled": true
       },
       {
         "name": "Plume Pink",
-        "enabled": false
+        "enabled": true
       },
       {
         "name": "Plume Blue",
-        "enabled": false
+        "enabled": true
       },
       {
         "name": "Jelly Green",
@@ -299,7 +299,7 @@ const products = [
       {
         "name": "Арбуз лед",
         "stock": "",
-        "enabled": false
+        "enabled": true
       },
       {
         "name": "Виноград кислое яблоко",
@@ -319,7 +319,7 @@ const products = [
       {
         "name": "Всплеск ежевики",
         "stock": "",
-        "enabled": false
+        "enabled": true
       },
       {
         "name": "Грейпфрут лимон",
@@ -379,7 +379,7 @@ const products = [
       {
         "name": "Черника лед",
         "stock": "",
-        "enabled": false
+        "enabled": true
       },
       {
         "name": "Черника малина лед",
@@ -396,23 +396,6 @@ const products = [
         "stock": "",
         "enabled": false
       }
-    ]
-  },
-  {
-    "id": "annima",
-    "categoryId": "liquids",
-    "name": "Annima",
-    "description": "Популярная солевая жидкость\nВыберите линейку\nОбъём: 30мл",
-    "price": 450,
-    "cashPrice": 450,
-    "stock": 50,
-    "icon": "💧",
-    "location": "Все точки",
-    "image": "AgACAgIAAxkBAAOTamtTi_fBGDqgJ8aq-qiOizR3BTcAAisXaxu7VWBLFYZE6cMzdrUBAAMCAAN5AAM9BA",
-    "isParent": true,
-    "subProducts": [
-      "annima_gold",
-      "annima_sour"
     ]
   },
   {
@@ -2345,6 +2328,85 @@ const products = [
       }
     ],
     "enabled": true
+  },
+  {
+    "categoryId": "disposable",
+    "name": "Рик и Морти на замерзоне 18k",
+    "price": 1200,
+    "cashPrice": 1200,
+    "description": "",
+    "flavors": [
+      {
+        "name": "Скитлс лимон лайм",
+        "stock": "",
+        "enabled": true
+      },
+      {
+        "name": "Виноградный чупа чупс",
+        "stock": "",
+        "enabled": true
+      }
+    ],
+    "id": "18k",
+    "stock": 50,
+    "enabled": true,
+    "image": "AgACAgIAAxkBAAIUDWqMD78ZgY_Hq71yogjTrlT95TEMAAKIH2sbWJphSBF7te17CcuOAQADAgADeAADPQQ",
+    "location": "Нет данных"
+  },
+  {
+    "categoryId": "disposable",
+    "name": "Рик и Морти The Anime 15k",
+    "price": 1000,
+    "cashPrice": 1000,
+    "description": "",
+    "flavors": [
+      {
+        "name": "Вишнёвый энергетик",
+        "stock": "",
+        "enabled": true
+      }
+    ],
+    "id": "the_anime_15k",
+    "stock": 50,
+    "enabled": true,
+    "image": "AgACAgIAAxkBAAIUKGqMED7jOHDMgdvF5JZXy7adH7lLAAKKH2sbWJphSJDmT7NsCPZNAQADAgADeQADPQQ",
+    "location": "Нет данных"
+  },
+  {
+    "categoryId": "disposable",
+    "name": "Riio MixJoy 25k",
+    "price": 1200,
+    "cashPrice": 1200,
+    "description": "",
+    "flavors": [
+      {
+        "name": "Мята Голубая малина",
+        "stock": "",
+        "enabled": true
+      }
+    ],
+    "id": "riio_mixjoy_25k",
+    "stock": 50,
+    "enabled": true,
+    "image": "AgACAgIAAxkBAAIUNGqMEJW6pC_82n1gj9WyYwLQZqW8AAKLH2sbWJphSH5cCR5Pu5mmAQADAgADeQADPQQ",
+    "location": "Нет данных"
+  },
+  {
+    "id": "annima",
+    "categoryId": "liquids",
+    "name": "Annima",
+    "description": "Популярная солевая жидкость\nВыберите линейку\nОбъём: 30мл",
+    "price": 450,
+    "cashPrice": 450,
+    "stock": 50,
+    "icon": "💧",
+    "location": "Все точки",
+    "image": "AgACAgIAAxkBAAOTamtTi_fBGDqgJ8aq-qiOizR3BTcAAisXaxu7VWBLFYZE6cMzdrUBAAMCAAN5AAM9BA",
+    "isParent": true,
+    "subProducts": [
+      "annima_gold",
+      "annima_sour"
+    ]
   }
 ];
 
