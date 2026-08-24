@@ -57,15 +57,25 @@ async function getOrdersAsync() {
         }
         if (Array.isArray(orders)) {
           console.log(`📦 Loaded ${orders.length} orders from Redis`);
+          // Показываем последние 3 для отладки
+          if (orders.length > 0) {
+            const recent = orders.slice(-3);
+            console.log('   Recent orders:', recent.map(o => (o.id || o.orderId) + '(' + o.source + ')').join(', '));
+          }
           return orders;
         }
+      } else {
+        console.log('⚠️ No orders in Redis, falling back to file');
       }
+    } else {
+      console.log('⚠️ Redis client not available');
     }
   } catch (e) {
-    console.error('Ошибка чтения заказов из Redis:', e.message);
+    console.error('❌ Error reading orders from Redis:', e.message);
   }
   
   // Fallback: читаем из файла
+  console.log('📄 Loading orders from file');
   return getOrders();
 }
 
